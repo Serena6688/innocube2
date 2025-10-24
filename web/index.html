@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Innocube - Survey Data Management System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            color: #155724;
+        }
+
+        .alert-error {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #721c24;
+        }
+
+        .survey-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .survey-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .survey-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .survey-meta {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #667eea;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Innocube</h1>
+            <p>Survey Data Management Platform</p>
+        </div>
+
+        <div id="alerts"></div>
+
+        <div class="dashboard">
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>📤 Data Upload</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📊</div>
+                    <div class="upload-text">Drag an Excel file here, or click to choose a file</div>
+                    <div class="upload-text" style="font-size: 0.9rem; color: #999;">
+                        Supports .xlsx, .xls, .csv formats
+                    </div>
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+                <div class="progress-bar" id="progressBar" style="display: none;">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div class="card">
+                <h2>📈 Overview</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading statistics...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Surveys -->
+            <div class="card">
+                <h2>📋 Recent Surveys</h2>
+                <div class="survey-list" id="surveyList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading surveys...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demographics Chart -->
+            <div class="card">
+                <h2>👥 Age</h2>
+                <div class="chart-container">
+                    <canvas id="demographicsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Brand Preferences Chart -->
+            <div class="card">
+                <h2>🏆 Purchasing Power</h2>
+                <div class="chart-container">
+                    <canvas id="brandChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Data Export -->
+            <div class="card">
+                <h2>💾 Export Data</h2>
+                <p style="margin-bottom: 20px; color: #666;">Export analytics and cleaned data</p>
+                <button class="btn" onclick="exportData('json')" style="margin-right: 10px;">
+                    Export JSON
+                </button>
+                <button class="btn" onclick="exportData('csv')">
+                    Export CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let demographicsChart = null;
+        let brandChart = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDragAndDrop();
+            loadDashboardData();
+            loadSurveys();
+            loadAnalytics();
+        });
+
+        // Drag and drop functionality
+        function initializeDragAndDrop() {
+            const uploadArea = document.getElementById('uploadArea');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            document.getElementById('uploadArea').classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            document.getElementById('uploadArea').classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        function handleFileSelect(event) {
+            handleFiles(event.target.files);
+        }
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                uploadFile(files[0]);
+            }
+        }
+
+        // File upload function
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+
+            try {
+                showAlert('Starting upload...', 'info');
+                
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progressFill.style.width = progress + '%';
+                }, 200);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert(`✅ ${result.message}`, 'success');
+                    loadDashboardData(); // Refresh stats
+                    loadSurveys(); // Refresh survey list
+                    loadAnalytics(); // Refresh charts
+                } else {
+                    showAlert(`❌ Upload failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Upload failed: ${error.message}`, 'error');
+            } finally {
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 1000);
+            }
+        }
+
+        // Load dashboard statistics
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/dashboard/stats');
+                const stats = await response.json();
+
+                const statsGrid = document.getElementById('statsGrid');
+                statsGrid.innerHTML = `
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.total_surveys}</div>
+                        <div class="stat-label">Surveys</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.total_responses.toLocaleString()}</div>
+                        <div class="stat-label">TOTAL RESPONSES</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.total_respondents.toLocaleString()}</div>
+                        <div class="stat-label">RESPONDENTS</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.total_questions}</div>
+                        <div class="stat-label">QUESTIONS</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                document.getElementById('statsGrid').innerHTML = '<div style="text-align: center; color: #666;">Failed to load</div>';
+            }
+        }
+
+        // Load surveys
+        async function loadSurveys() {
+            try {
+                const response = await fetch('/api/surveys');
+                const surveys = await response.json();
+
+                const surveyList = document.getElementById('surveyList');
+                
+                if (surveys.length === 0) {
+                    surveyList.innerHTML = '<div style="text-align: center; color: #666;">No surveys yet</div>';
+                    return;
+                }
+
+                surveyList.innerHTML = surveys.map(survey => `
+                    <div class="survey-item">
+                        <div class="survey-title">${survey.title}</div>
+                        <div class="survey-meta">
+                            Version: ${survey.version} | 
+                            Questions: ${survey.question_count} | 
+                            Responses: ${survey.response_count} |
+                            Created: ${new Date(survey.created_at).toLocaleDateString('en-US')}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading surveys:', error);
+                document.getElementById('surveyList').innerHTML = '<div style="text-align: center; color: #666;">Failed to load</div>';
+            }
+        }
+
+        // Load analytics data and create charts
+        async function loadAnalytics() {
+            try {
+                // Load demographics
+                const demoResponse = await fetch('/api/analytics/demographics');
+                const demoData = await demoResponse.json();
+                createDemographicsChart(demoData);
+
+                // Load brand preferences
+                const brandResponse = await fetch('/api/analytics/brand-preferences');
+                const brandData = await brandResponse.json();
+                createBrandChart(brandData);
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        // Create demographics chart
+        function createDemographicsChart(data) {
+            const ctx = document.getElementById('demographicsChart').getContext('2d');
+            
+            if (demographicsChart) {
+                demographicsChart.destroy();
+            }
+
+            const ageData = data.age_distribution || [];
+            const genderData = data.gender_distribution || [];
+
+            demographicsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ageData.map(item => item.age_group),
+                    datasets: [{
+                        label: 'Age Distribution',
+                        data: ageData.map(item => item.count),
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(102, 126, 234, 1)',
+                            'rgba(118, 75, 162, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 205, 86, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Age Distribution'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create brand preferences chart
+        function createBrandChart(data) {
+            const ctx = document.getElementById('brandChart').getContext('2d');
+            
+            if (brandChart) {
+                brandChart.destroy();
+            }
+
+            // Process brand data
+            let allBrands = {};
+            data.forEach(question => {
+                question.responses.forEach(response => {
+                    if (allBrands[response.brand]) {
+                        allBrands[response.brand] += response.count;
+                    } else {
+                        allBrands[response.brand] = response.count;
+                    }
+                });
+            });
+
+            const brandLabels = Object.keys(allBrands);
+            const brandCounts = Object.values(allBrands);
+
+            brandChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: brandLabels,
+                    datasets: [{
+                        label: 'Count',
+                        data: brandCounts,
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Purchasing Power'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Export data function
+        async function exportData(format) {
+            try {
+                showAlert('Preparing export...', 'info');
+                
+                if (format === 'json') {
+                    const response = await fetch('/api/surveys');
+                    const data = await response.json();
+                    downloadJSON(data, 'survey_data.json');
+                } else if (format === 'csv') {
+                    // Get the first survey's results as CSV
+                    const surveysResponse = await fetch('/api/surveys');
+                    const surveys = await surveysResponse.json();
+                    
+                    if (surveys.length > 0) {
+                        const resultsResponse = await fetch(`/api/surveys/${surveys[0].id}/results`);
+                        const results = await resultsResponse.json();
+                        downloadCSV(results.data, 'survey_results.csv');
+                    }
+                }
+                
+                showAlert('Data exported successfully!', 'success');
+            } catch (error) {
+                showAlert(`Export failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Download JSON
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Download CSV
+        function downloadCSV(data, filename) {
+            if (data.length === 0) return;
+            
+            // Get all possible headers
+            const headers = new Set(['completion_time', 'age', 'gender', 'location']);
+            data.forEach(item => {
+                Object.keys(item.answers || {}).forEach(key => headers.add(key));
+            });
+            
+            const headerArray = Array.from(headers);
+            
+            // Create CSV content
+            let csv = headerArray.join(',') + '\n';
+            data.forEach(item => {
+                const row = headerArray.map(header => {
+                    if (header === 'completion_time') return item.completion_time;
+                    if (header === 'age') return item.respondent?.age || '';
+                    if (header === 'gender') return item.respondent?.gender || '';
+                    if (header === 'location') return item.respondent?.location || '';
+                    return item.answers?.[header] || '';
+                });
+                csv += row.map(value => `"${value}"`).join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Alert system
+        function showAlert(message, type) {
+            const alertsContainer = document.getElementById('alerts');
+            const alertClass = type === 'success' ? 'alert-success' : 
+                             type === 'error' ? 'alert-error' : 'alert-info';
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert ${alertClass}`;
+            alertDiv.textContent = message;
+            
+            alertsContainer.appendChild(alertDiv);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        // Add CSS for info alerts
+        const style = document.createElement('style');
+        style.textContent = `
+            .alert-info {
+                background: rgba(23, 162, 184, 0.1);
+                border: 1px solid rgba(23, 162, 184, 0.3);
+                color: #0c5460;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

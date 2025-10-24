@@ -1,0 +1,4 @@
+age,gender,city,province,purchase_power
+30,Male,北京市,北京市,高
+35,Female,上海市,上海市,中
+60,Male,深圳市,广东省,低

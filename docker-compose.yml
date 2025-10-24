@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: innocube-api
+    env_file: .env
+    
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  worker:
+    build: .
+    container_name: innocube-worker
+    env_file: .env
+    command: celery -A innocube_tasks:celery_app worker --loglevel=info
+    depends_on:
+      - api
+      - redis
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  scheduler:
+    build: .
+    container_name: innocube-scheduler
+    env_file: .env
+    command: celery -A innocube_tasks:celery_app beat --loglevel=info
+    depends_on:
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    container_name: innocube-db
+    environment:
+      POSTGRES_USER: innocube_user
+      POSTGRES_PASSWORD: innocube_password
+      POSTGRES_DB: innocube_db
+    ports:
+      - "55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: innocube-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  web:
+    image: nginx:alpine
+    container_name: innocube-web
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./innocube_dashboard.html:/usr/share/nginx/html/index.html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+volumes:
+  pgdata:

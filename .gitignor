@@ -1,0 +1,28 @@
+# Python / build
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.log
+
+# venv
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# Environment / secrets
+.env
+
+# Local DB & uploads
+instance/*.db
+instance/*.sqlite
+uploads/*
+!uploads/.gitkeep
+
+# Jupyter, cache
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
